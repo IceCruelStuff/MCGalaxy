@@ -120,7 +120,7 @@ namespace MCGalaxy {
             foreach (PlayerBot b in botsList) { Despawn(p, b); }
         }
         
-        internal static void Spawn(Player dst, PlayerBot b) {
+        public static void Spawn(Player dst, PlayerBot b) {
             string name = Chat.Format(b.color + b.DisplayName, dst, true, false);
             if (b.DisplayName.CaselessEq("empty")) name = "";
             string skin = Chat.Format(b.SkinName, dst, true, false);
@@ -154,14 +154,14 @@ namespace MCGalaxy {
             }
         }
         
-        internal static void Despawn(Player dst, Player other) {
+        public static void Despawn(Player dst, Player other) {
             OnEntityDespawnedEvent.Call(other, dst);
             byte id = other == dst ? SelfID : other.id;
             dst.Send(Packet.RemoveEntity(id));
             if (!Server.Config.TablistGlobal) TabList.Remove(dst, other);
         }
         
-        internal static void Despawn(Player dst, PlayerBot b) {
+        public static void Despawn(Player dst, PlayerBot b) {
             OnEntityDespawnedEvent.Call(b, dst);
             dst.Send(Packet.RemoveEntity(b.id));
             if (Server.Config.TablistBots) TabList.Remove(dst, b);
@@ -182,7 +182,7 @@ namespace MCGalaxy {
         public static void UpdateModel(Entity entity, string model) {
             Player[] players = PlayerInfo.Online.Items;
             Level lvl = entity.Level;
-            entity.SetModel(model, lvl);
+            entity.SetModel(model);
             
             foreach (Player pl in players) {
                 if (pl.level != lvl || !pl.Supports(CpeExt.ChangeModel)) continue;
@@ -198,15 +198,16 @@ namespace MCGalaxy {
         static void SendModelScales(Player pl, byte id, Entity entity) {
             if (!pl.Supports(CpeExt.EntityProperty)) return;
             
-            string model = entity.Model;
-            float scale = AABB.GetScaleFrom(ref model);
-            SendModelScale(pl, id, EntityProp.ScaleX, entity.ScaleX * scale);
-            SendModelScale(pl, id, EntityProp.ScaleY, entity.ScaleY * scale);
-            SendModelScale(pl, id, EntityProp.ScaleZ, entity.ScaleZ * scale);
+            float max = ModelInfo.MaxScale(entity, entity.Model);
+            SendModelScale(pl, id, EntityProp.ScaleX, entity.ScaleX, max);
+            SendModelScale(pl, id, EntityProp.ScaleY, entity.ScaleY, max);
+            SendModelScale(pl, id, EntityProp.ScaleZ, entity.ScaleZ, max);
         }
         
-        static void SendModelScale(Player pl, byte id, EntityProp axis, float value) {
+        static void SendModelScale(Player pl, byte id, EntityProp axis, float value, float max) {
             if (value == 0) return;
+            value = Math.Min(value, max);
+            
             int packed = (int)(value * 1000);
             if (packed == 0) return;
             pl.Send(Packet.EntityProperty(id, axis, packed));

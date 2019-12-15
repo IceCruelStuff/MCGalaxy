@@ -160,12 +160,10 @@ namespace MCGalaxy {
                 message = Server.Config.DefaultColor + message;
             }
             message = Chat.Format(message, this);
-            
-            int totalTries = 0;
             OnMessageRecievedEvent.Call(this, message);
             if (cancelmessage) { cancelmessage = false; return; }
             
-            retryTag: try {
+            try {
                 foreach (string raw in LineWrapper.Wordwrap(message)) {
                     string line = raw;
                     if (!Supports(CpeExt.EmoteFix) && LineEndsInEmote(line))
@@ -173,11 +171,8 @@ namespace MCGalaxy {
 
                     Send(Packet.Message(line, (CpeMessageType)id, hasCP437));
                 }
-            } catch ( Exception e ) {
-                message = "&f" + message;
-                totalTries++;
-                if ( totalTries < 10 ) goto retryTag;
-                else Logger.LogError(e);
+            } catch (Exception e) {
+                Logger.LogError(e);
             }
         }
         
@@ -251,10 +246,10 @@ namespace MCGalaxy {
                 using (LevelChunkStream dst = new LevelChunkStream(this))
                     using (Stream stream = LevelChunkStream.CompressMapHeader(this, volume, dst))
                 {
-                    if (!level.MayHaveCustomBlocks) {
-                        LevelChunkStream.CompressMapSimple(this, stream, dst);
-                    } else {
+                	if (level.MightHaveCustomBlocks()) {
                         LevelChunkStream.CompressMap(this, stream, dst);
+                	} else {
+                        LevelChunkStream.CompressMapSimple(this, stream, dst);
                     }
                 }
                 

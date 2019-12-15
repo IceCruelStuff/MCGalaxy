@@ -43,6 +43,7 @@ namespace MCGalaxy.Commands.CPE {
         protected override void SetBotData(Player p, PlayerBot bot, string model) {
             bool changedAxisScale;
             model = ParseModel(p, bot, model, out changedAxisScale);
+            if (model == null) return;
             Entities.UpdateModel(bot, model);
             
             p.Message("You changed the model of bot " + bot.ColoredName + " %Sto a &c" + model);
@@ -52,10 +53,11 @@ namespace MCGalaxy.Commands.CPE {
         protected override void SetPlayerData(Player p, Player who, string model) {
             bool changedAxisScale;
             model = ParseModel(p, who, model, out changedAxisScale);
+            if (model == null) return;
             Entities.UpdateModel(who, model);
             
             if (p != who) {
-                Chat.MessageFrom(who, "λNICK %Shad their model change to a &c" + model);
+                Chat.MessageFrom(who, "λNICK %Shad their model changed to a &c" + model);
             } else {
                 who.Message("Changed your own model to a &c" + model);
             }
@@ -98,13 +100,21 @@ namespace MCGalaxy.Commands.CPE {
                 changedAxisScale = true;
                 return ParseModelScale(dst, entity, model, "Z scale", ref entity.ScaleZ);
             }
+            
+            float max = ModelInfo.MaxScale(entity, model);
+            // restrict player model scale, but bots can have unlimited model scale
+            if (ModelInfo.GetRawScale(model) > max) {
+                dst.Message("%WScale must be {0} or less for {1} model",
+                            max, ModelInfo.GetRawModel(model));
+                return null;
+            }
             return model;
         }
         
         static string ParseModelScale(Player dst, Entity entity, string model, string argName, ref float value) {
             string[] bits = model.SplitSpaces();
-            CommandParser.GetReal(dst, bits[1], argName, ref value, 0, 3);
-            return entity.Model;
+            float max     = ModelInfo.MaxScale(entity, entity.Model);
+            return CommandParser.GetReal(dst, bits[1], argName, ref value, 0, max) ? entity.Model : null;
         }
 
         public override void Help(Player p) {

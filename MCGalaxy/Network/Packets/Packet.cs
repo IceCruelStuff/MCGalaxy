@@ -40,7 +40,7 @@ namespace MCGalaxy.Network {
                 NetUtils.Write(motd, buffer, 66, p.hasCP437);
             }
 
-            buffer[130] = p.group.Blocks[Block.Bedrock] ? (byte)100 : (byte)0;
+            buffer[130] = p.UserType();
             return buffer;
         }
         
@@ -108,11 +108,8 @@ namespace MCGalaxy.Network {
             return buffer;
         }
 
-        public static byte[] UserType(Player p) {
-            byte[] buffer = new byte[2];
-            buffer[0] = Opcode.SetPermission;
-            buffer[1] = p.group.Blocks[Block.Bedrock] ? (byte)100 : (byte)0;
-            return buffer;
+        public static byte[] UserType(byte type) {
+            return new byte[] { Opcode.SetPermission, type };
         }
         
         #endregion
@@ -363,6 +360,32 @@ namespace MCGalaxy.Network {
             buffer[0] = Opcode.CpeSetInventoryOrder;
             NetUtils.WriteBlock(rawId, buffer, 1, extBlocks);
             NetUtils.WriteBlock(rawOrder, buffer, extBlocks ? 3 : 2, extBlocks);
+            return buffer;
+        }
+        
+        public static byte[] SetSpawnpoint(Position pos, Orientation rot, bool extPos ) {
+            byte[] buffer = new byte[extPos ? 15 : 9];
+            buffer[0] = Opcode.CpeSetSpawnpoint;
+            NetUtils.WritePos(pos, buffer, 1, extPos);
+            int offset = extPos ? 13 : 7;
+            buffer[offset] = rot.RotY;
+            buffer[1+offset] = rot.HeadX;
+            return buffer;
+        }
+        
+        /// <summary> Velocity is considered in terms of the 
+        /// force needed to reach [num] block height if applied to Y velocity.
+        /// e.g. 0 1.233 0 would give an upward force identical to a default clientside jump.
+        /// </summary>
+        public static byte[] VelocityControl(float x, float y, float z, byte xMode, byte yMode, byte zMode) {
+            byte[] buffer = new Byte[16];
+            buffer[0] = Opcode.CpeVelocityControl;
+            NetUtils.WriteI32((int)(x * 10000), buffer, 1);
+            NetUtils.WriteI32((int)(y * 10000), buffer, 5);
+            NetUtils.WriteI32((int)(z * 10000), buffer, 9);
+            buffer[13] = xMode;
+            buffer[14] = yMode;
+            buffer[15] = zMode;
             return buffer;
         }
         

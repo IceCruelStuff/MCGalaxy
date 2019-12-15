@@ -71,6 +71,7 @@ namespace MCGalaxy {
         
         public override byte EntityID { get { return id; } }
         public override Level Level { get { return level; } }
+        public override bool RestrictsScale { get { return true; } }
         
         public override bool CanSeeEntity(Entity other) {
             Player target = other as Player;
@@ -310,6 +311,8 @@ namespace MCGalaxy {
             }
             return true;
         }
+        
+        internal byte UserType() { return group.Blocks[Block.Bedrock] ? (byte)100 : (byte)0; }
 
         #endregion
 
@@ -365,7 +368,9 @@ namespace MCGalaxy {
                 selMarkCallback = markCallback;
                 selIndex = 0;
                 Blockchange = SelectionBlockChange;
+                
                 if (title != null) InitSelectionHUD();
+                else ResetSelectionHUD();
             }
         }
         

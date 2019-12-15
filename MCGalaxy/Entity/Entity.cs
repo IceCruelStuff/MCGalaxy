@@ -50,9 +50,9 @@ namespace MCGalaxy {
             Pos = pos; lastPos = pos;
         }
         
-        public void SetModel(string model, Level lvl) {
-            Model = model;
-            ModelBB = AABB.ModelAABB(this, lvl);
+        public void SetModel(string model) {
+            Model   = model;
+            ModelBB = ModelInfo.CalcAABB(this);
         }
         
         public void SetYawPitch(byte yaw, byte pitch) {
@@ -64,6 +64,7 @@ namespace MCGalaxy {
         public abstract bool CanSeeEntity(Entity other);
         public abstract byte EntityID { get; }
         public abstract Level Level { get; }
+        public abstract bool RestrictsScale { get; }
         
         protected virtual void OnSetPos() { }
         
