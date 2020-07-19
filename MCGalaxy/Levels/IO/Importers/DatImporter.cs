@@ -64,13 +64,11 @@ namespace MCGalaxy.Levels.IO {
             public string Name;
             public byte Flags;
             public JFieldDesc[] Fields;
-            public List<object> Annotation;
             public JClassDesc SuperClass;
         }
         
         class JClassData {
             public object[] Values;
-            public List<object> Annotation;
         }
         
         class JObject {
@@ -218,7 +216,8 @@ namespace MCGalaxy.Levels.IO {
             for (int i = 0; i < desc.Fields.Length; i++) {
                 desc.Fields[i] = FieldDesc(r);
             }
-            desc.Annotation = Annotation(r);
+            
+            SkipAnnotation(r);
             desc.SuperClass = ClassDesc(r);
             return desc;
         }
@@ -244,7 +243,7 @@ namespace MCGalaxy.Levels.IO {
             }
             
             if ((desc.Flags & SC_WRITE_METHOD) != 0) {
-                data.Annotation = Annotation(r);
+                SkipAnnotation(r);
             }
             return data;
         }
@@ -284,13 +283,11 @@ namespace MCGalaxy.Levels.IO {
             return desc;
         }
         
-        static List<object> Annotation(DatReader r) {
-            List<object> parts = new List<object>();
+        static void SkipAnnotation(DatReader r) {
             byte typeCode;
             while ((typeCode = r.ReadUInt8()) != TC_ENDBLOCKDATA) {
-                parts.Add(ReadContent(r, typeCode));
+                ReadContent(r, typeCode);
             }
-            return parts;
         }
     }
 }

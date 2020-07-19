@@ -14,19 +14,17 @@ permissions and limitations under the Licenses.
 */
 using System;
 using System.Collections.Generic;
-using System.Net;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
-using MCGalaxy.Blocks;
 using MCGalaxy.DB;
 using MCGalaxy.Drawing;
 using MCGalaxy.Events.EconomyEvents;
 using MCGalaxy.Events.PlayerEvents;
 using MCGalaxy.Games;
-using MCGalaxy.SQL;
-using MCGalaxy.Network;
-using MCGalaxy.Tasks;
 using MCGalaxy.Maths;
+using MCGalaxy.Network;
+using MCGalaxy.SQL;
 using BlockID = System.UInt16;
 
 namespace MCGalaxy {
@@ -41,7 +39,7 @@ namespace MCGalaxy {
             get { return "Console [&a" + Server.Config.ConsoleName + "%S]"; }
         }
         
-        public override void Message(byte id, string message) {
+        public override void Message(byte type, string message) {
             Logger.Log(LogType.ConsoleMessage, message);
         }
     }
@@ -123,6 +121,23 @@ namespace MCGalaxy {
             if (title.Length > 0)   prefix += MakeTitle(title, titlecolor);
         }
         
+        /// <summary> Raises OnSettingColorEvent then sets color. </summary>
+        public void SetColor(string col) {
+            OnSettingColorEvent.Call(this, ref col);
+            color = col;
+        }
+        
+        /// <summary> Calls SetColor, then updates state depending on color. 
+        /// (e.g. entity name, tab list name, prefix, etc) </summary>
+        public void UpdateColor(string col) {
+            string prevCol = color;
+            SetColor(col);
+            
+            if (prevCol == color) return;
+            Entities.GlobalRespawn(this);
+            SetPrefix();
+        }
+        
         internal string MakeTitle(string title, string titleCol) {
              return color + "[" + titleCol + title + color + "] ";
         }
@@ -141,13 +156,13 @@ namespace MCGalaxy {
 
             // Player disconnected before SQL data was retrieved
             if (!gotSQLData) return;
-            long blocks = PlayerData.BlocksPacked(TotalPlaced, TotalModified);
-            long cuboided = PlayerData.CuboidPacked(TotalDeleted, TotalDrawn);
+            long blocks = PlayerData.Pack(TotalPlaced,  TotalModified);
+            long drawn  = PlayerData.Pack(TotalDeleted, TotalDrawn);
             Database.Backend.UpdateRows("Players", "IP=@0, LastLogin=@1, totalLogin=@2, totalDeaths=@3, Money=@4, " +
                                         "totalBlocks=@5, totalCuboided=@6, totalKicked=@7, TimeSpent=@8, Messages=@9", "WHERE Name=@10", 
                                         ip, LastLogin.ToString(Database.DateFormat),
                                         TimesVisited, TimesDied, money, blocks,
-                                        cuboided, TimesBeenKicked, (long)TotalTime.TotalSeconds, TotalMessagesSent, name);
+                                        drawn, TimesBeenKicked, (long)TotalTime.TotalSeconds, TotalMessagesSent, name);
         }
         
         public bool CanUse(Command cmd) { return group.Commands.Contains(cmd); }
@@ -190,29 +205,24 @@ namespace MCGalaxy {
         }
         
         /// <summary> Disconnects the players from the server,
-        /// with the given message shown in both chat and in the disconnect packet. </summary>
+        /// with the given messages shown in chat and in the disconnect packet. </summary>
         public void Leave(string chatMsg, string discMsg, bool sync = false) { 
             LeaveServer(chatMsg, discMsg, false, sync); 
         }
 
         /// <summary> Disconnects the players from the server,
-        /// with the given messages shown in chat and in the disconnect packet. </summary>        
-        public void Leave(string discMsg) { Leave(discMsg, false); }       
-        public void Leave(string discMsg, bool sync = false) {
-            LeaveServer(discMsg, discMsg, false, sync);
+        /// with the same message shown in chat and in the disconnect packet. </summary>        
+        public void Leave(string msg) { Leave(msg, false); }       
+        public void Leave(string msg, bool sync = false) {
+            LeaveServer(msg, msg, false, sync);
         }
         
         [Obsolete("Use Leave() or Kick() instead")]
-        public void leftGame(string discMsg = "") {
-            string chatMsg = discMsg;
-            if (chatMsg.Length > 0) chatMsg = "(" + chatMsg + ")"; // old format
-            LeaveServer(chatMsg, discMsg, true); 
-        }
-        
+        public void leftGame(string discMsg = "") { Kick(discMsg); }
 
         bool leftServer = false;
         void LeaveServer(string chatMsg, string discMsg, bool isKick, bool sync = false) {
-            if (leftServer) return;
+            if (leftServer || IsSuper) return;
             leftServer = true;
             CriticalTasks.Clear();
             ZoneIn = null;
@@ -316,9 +326,43 @@ namespace MCGalaxy {
 
         #endregion
 
+        /// <summary> Returns whether the player is currently allowed to talk. </summary>
+        public bool CanSpeak() { 
+            return IsConsole || (!muted && !Unverified && (voice || !Server.chatmod));
+        }
+        
+        public bool CheckCanSpeak(string action) {
+            if (IsConsole) return true;
+            
+            if (muted) { 
+                Message("Cannot {0} %Swhile muted", action); return false; 
+            }
+            if (Server.chatmod && !voice) { 
+                Message("Cannot {0} %Swhile chat moderation is on without %T/Voice%S", action); return false; 
+            }
+            if (Unverified) {
+                Message("%WYou must first verify with %T/Pass [Password]"); return false;
+            }
+            return true;
+        }
+        
+        /// <summary> Blocks calling thread until all 'new map loaded' packets have been sent. </summary>
         public void BlockUntilLoad(int sleep) {
             while (Loading) 
                 Thread.Sleep(sleep);
+        }
+        
+        /// <summary> Checks if player is currently unverified, and if so, sends a message informing them </summary>
+        public void CheckIsUnverified() {
+            if (verifiedPass) return;
+            Unverified = Server.Config.verifyadmins && Rank >= Server.Config.VerifyAdminsRank;
+            if (!Unverified) return;
+            
+            if (!File.Exists("extra/passwords/" + name + ".dat")) {
+                Message("%WPlease set your admin verification password with %T/SetPass [password]!");
+            } else {
+                Message("%WPlease complete admin verification with %T/Pass [password]!");
+            }
         }
         
         /// <summary> Sends a block change packet to the user containing the current block at the given coordinates. </summary>

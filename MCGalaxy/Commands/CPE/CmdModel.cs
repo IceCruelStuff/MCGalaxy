@@ -21,7 +21,6 @@ using MCGalaxy.Bots;
 namespace MCGalaxy.Commands.CPE {
     public class CmdModel : EntityPropertyCmd {
         public override string name { get { return "Model"; } }
-        public override string shortcut { get { return "SetModel"; } }
         public override string type { get { return CommandTypes.Other; } }
         public override LevelPermission defaultRank { get { return LevelPermission.AdvBuilder; } }
         public override CommandPerm[] ExtraPerms {
@@ -44,7 +43,7 @@ namespace MCGalaxy.Commands.CPE {
             bool changedAxisScale;
             model = ParseModel(p, bot, model, out changedAxisScale);
             if (model == null) return;
-            Entities.UpdateModel(bot, model);
+            bot.UpdateModel(model);
             
             p.Message("You changed the model of bot " + bot.ColoredName + " %Sto a &c" + model);
             BotsFile.Save(p.level);
@@ -54,7 +53,7 @@ namespace MCGalaxy.Commands.CPE {
             bool changedAxisScale;
             model = ParseModel(p, who, model, out changedAxisScale);
             if (model == null) return;
-            Entities.UpdateModel(who, model);
+            who.UpdateModel(model);
             
             if (p != who) {
                 Chat.MessageFrom(who, "λNICK %Shad their model changed to a &c" + model);
@@ -63,7 +62,7 @@ namespace MCGalaxy.Commands.CPE {
             }
             
             if (!model.CaselessEq("humanoid")) {
-                Server.models.AddOrReplace(who.name, model);
+                Server.models.Update(who.name, model);
             } else {
                 Server.models.Remove(who.name);
             }
@@ -71,7 +70,7 @@ namespace MCGalaxy.Commands.CPE {
             
             if (!changedAxisScale) return;
             if (who.ScaleX != 0 || who.ScaleY != 0 || who.ScaleZ != 0) {
-                Server.modelScales.AddOrReplace(who.name, who.ScaleX + " " + who.ScaleY + " " + who.ScaleZ);
+                Server.modelScales.Update(who.name, who.ScaleX + " " + who.ScaleY + " " + who.ScaleZ);
             } else {
                 Server.modelScales.Remove(who.name);
             }

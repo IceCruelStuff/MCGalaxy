@@ -62,8 +62,7 @@ namespace MCGalaxy {
                 case Opcode.CpeTwoWayPing:  return 1 + 1 + 2;
 
                 default:
-                    string msg = "Unhandled message id \"" + opcode + "\"!";
-                    Leave(msg, msg, true);
+                    Leave("Unhandled opcode \"" + opcode + "\"!", true);
                     return -1;
             }
         }
@@ -154,7 +153,25 @@ namespace MCGalaxy {
         public void SendMessage(byte id, string message) { Message(id, message); }
         public void Message(string message) { Message(0, message); }
         
-        public virtual void Message(byte id, string message) {
+        // Need to combine chat line packets into one Send call, so that
+        // multi-line messages from multiple threads don't interleave
+        void SendLines(List<string> lines, byte type) {
+            for (int i = 0; i < lines.Count;) {
+                // Send buffer max size is 4096 bytes
+                // Divide by 66 (size of chat packet) gives ~62 lines
+                int count   = Math.Min(62, lines.Count - i);
+                byte[] data = new byte[count * 66];
+                
+                for (int j = 0; j < count; i++, j++) {
+                    string line = lines[i];
+                    if (!Supports(CpeExt.EmoteFix) && LineEndsInEmote(line)) line += '\'';
+                    Packet.WriteMessage(line, type, hasCP437, data, j * 66);
+                }
+                Send(data);
+            }
+        }
+        
+        public virtual void Message(byte type, string message) {
             // Message should start with server color if no initial color
             if (message.Length > 0 && !(message[0] == '&' || message[0] == '%')) {
                 message = Server.Config.DefaultColor + message;
@@ -164,13 +181,7 @@ namespace MCGalaxy {
             if (cancelmessage) { cancelmessage = false; return; }
             
             try {
-                foreach (string raw in LineWrapper.Wordwrap(message)) {
-                    string line = raw;
-                    if (!Supports(CpeExt.EmoteFix) && LineEndsInEmote(line))
-                        line += '\'';
-
-                    Send(Packet.Message(line, (CpeMessageType)id, hasCP437));
-                }
+                SendLines(LineWrapper.Wordwrap(message), type);
             } catch (Exception e) {
                 Logger.LogError(e);
             }
@@ -199,12 +210,13 @@ namespace MCGalaxy {
             motd = Chat.Format(motd, this);
             OnSendingMotdEvent.Call(this, ref motd);
             
+            // change -hax into +hax etc
+            if (Game.Referee) motd = motd.Replace('-', '+');
             byte[] packet = Packet.Motd(this, motd);
             Send(packet);
             
             if (!Supports(CpeExt.HackControl)) return;
             Send(Hacks.MakeHackControl(this, motd));
-            if (Game.Referee) Send(Packet.HackControl(true, true, true, true, true, -1));
         }
 
         readonly object joinLock = new object();
@@ -246,9 +258,9 @@ namespace MCGalaxy {
                 using (LevelChunkStream dst = new LevelChunkStream(this))
                     using (Stream stream = LevelChunkStream.CompressMapHeader(this, volume, dst))
                 {
-                	if (level.MightHaveCustomBlocks()) {
+                    if (level.MightHaveCustomBlocks()) {
                         LevelChunkStream.CompressMap(this, stream, dst);
-                	} else {
+                    } else {
                         LevelChunkStream.CompressMapSimple(this, stream, dst);
                     }
                 }

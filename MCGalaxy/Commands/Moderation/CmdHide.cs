@@ -32,7 +32,7 @@ namespace MCGalaxy.Commands.Moderation {
         }
         
         static void AnnounceOps(Player p, string msg) {
-            ItemPerms perms = new ItemPerms(p.hideRank, null, null);
+            ItemPerms perms = new ItemPerms(p.hideRank);
             Chat.MessageFrom(ChatScope.Perms, p, msg, perms, null, true);
         }
 
@@ -61,7 +61,7 @@ namespace MCGalaxy.Commands.Moderation {
                 }
                 
                 if (!p.opchat) opchat.Use(p, "", data);
-                Server.hidden.AddUnique(p.name);
+                Server.hidden.Add(p.name);
             } else {
                 AnnounceOps(p, "To Ops -λNICK%S- is now &fvisible");
                 p.hideRank = LevelPermission.Banned;

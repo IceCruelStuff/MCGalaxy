@@ -63,7 +63,7 @@ namespace MCGalaxy.Core {
             if (who != null) who.frozen = true;
             LogAction(e, who, "&bfrozen");
 
-            Server.frozen.AddOrReplace(e.Target, FormatModTaskData(e));
+            Server.frozen.Update(e.Target, FormatModTaskData(e));
             ModerationTasks.FreezeCalcNextRun();
             Server.frozen.Save();
         }
@@ -84,7 +84,7 @@ namespace MCGalaxy.Core {
             if (who != null) who.muted = true;
             LogAction(e, who, "&8muted");
             
-            Server.muted.AddOrReplace(e.Target, FormatModTaskData(e));
+            Server.muted.Update(e.Target, FormatModTaskData(e));
             ModerationTasks.MuteCalcNextRun();
             Server.muted.Save();
         }
@@ -107,12 +107,11 @@ namespace MCGalaxy.Core {
             if (e.Duration.Ticks != 0) {
                 string banner = e.Actor.truename;
                 DateTime end = DateTime.UtcNow.Add(e.Duration);
-                Server.tempBans.AddOrReplace(e.Target, Ban.PackTempBanData(e.Reason, banner, end));
+                Server.tempBans.Update(e.Target, Ban.PackTempBanData(e.Reason, banner, end));
                 Server.tempBans.Save();
 
                 if (who != null) who.Kick("Banned for " + e.Duration.Shorten(true) + "." + e.ReasonSuffixed);
             } else {
-                if (who != null) who.color = "";
                 Ban.DeleteBan(e.Target);
                 Ban.BanPlayer(e.Actor, e.Target, e.Reason, !e.Announce, e.TargetGroup.Name);
                 ModActionCmd.ChangeRank(e.Target, e.targetGroup, Group.BannedRank, who);
@@ -225,27 +224,24 @@ namespace MCGalaxy.Core {
         
         static void AddTempRank(ModAction e, Group newRank) {
             string data = FormatModTaskData(e) + " " + e.TargetGroup.Name + " " + newRank.Name;
-            Server.tempRanks.AddOrReplace(e.Target, data);
+            Server.tempRanks.Update(e.Target, data);
             ModerationTasks.TemprankCalcNextRun();
             Server.tempRanks.Save();
         }
         
         static string FormatModTaskData(ModAction e) {
-            long assign = DateTime.UtcNow.ToUnixTime();
-            DateTime expiryTime;
+            long assign  = DateTime.UtcNow.ToUnixTime();
+            DateTime end = DateTime.MaxValue.AddYears(-1);
             
-            if (e.Duration == TimeSpan.Zero) {
-                expiryTime = DateTime.MaxValue;
-            } else {
+            if (e.Duration != TimeSpan.Zero) {
                 try {
-                    expiryTime = DateTime.UtcNow.Add(e.Duration);
+                    end = DateTime.UtcNow.Add(e.Duration);
                 } catch (ArgumentOutOfRangeException) {
-                    // user provided extreme expiry time
-                    expiryTime = DateTime.MaxValue;
+                    // user provided extreme expiry time, ignore it
                 }
             }
             
-            long expiry = expiryTime.ToUnixTime();
+            long expiry = end.ToUnixTime();
             string assigner = e.Actor.name;
             return assigner + " " + assign + " " + expiry;
         }

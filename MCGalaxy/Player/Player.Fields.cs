@@ -62,6 +62,7 @@ namespace MCGalaxy {
         public LevelPermission hideRank = LevelPermission.Banned;
         public bool hidden;
         public bool painting;
+        public bool checkingBotInfo;
         public bool muted;
         public bool jailed;
         public bool agreed = true;
@@ -129,7 +130,7 @@ namespace MCGalaxy {
         public bool isFlying;
 
         public bool joker;
-        public bool adminpen;
+        public bool Unverified, verifiedPass;
         public bool voice;
         
         public CommandData DefaultCmdData {

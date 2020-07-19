@@ -26,18 +26,20 @@ using MCGalaxy.Tasks;
 namespace MCGalaxy {
     public static class Updater {
         
-        public static string parent = Path.GetFileName(Assembly.GetEntryAssembly().Location);
-        public const string BaseURL = "https://raw.githubusercontent.com/UnknownShadow200/MCGalaxy/master/";
+        static string exeName = Path.GetFileName(Assembly.GetEntryAssembly().Location);
+        public static string SourceURL = "https://github.com/UnknownShadow200/MCGalaxy";
+        public const string BaseURL    = "https://raw.githubusercontent.com/UnknownShadow200/MCGalaxy/master/";
         public const string UploadsURL = "https://github.com/UnknownShadow200/MCGalaxy/tree/master/Uploads";
+        
         const string CurrentVersionFile = BaseURL + "Uploads/current_version.txt";
         #if TEN_BIT_BLOCKS
-        const string DLLLocation = BaseURL + "Uploads/MCGalaxy_infid.dll?raw=true";
+        const string dllURL = BaseURL + "Uploads/MCGalaxy_infid.dll?raw=true";
         #else
-        const string DLLLocation = BaseURL + "Uploads/MCGalaxy_.dll?raw=true";
+        const string dllURL = BaseURL + "Uploads/MCGalaxy_.dll?raw=true";
         #endif
-        const string ChangelogLocation = BaseURL + "Changelog.txt";
-        const string EXELocation = BaseURL + "Uploads/MCGalaxy.exe?raw=true";
-        const string CLILocation = BaseURL + "Uploads/MCGalaxyCLI.exe?raw=true";
+        const string changelogURL = BaseURL + "Changelog.txt";
+        const string guiURL = BaseURL + "Uploads/MCGalaxy.exe?raw=true";
+        const string cliURL = BaseURL + "Uploads/MCGalaxyCLI.exe?raw=true";
 
         public static event EventHandler NewerVersionDetected;
         
@@ -51,10 +53,9 @@ namespace MCGalaxy {
             WebClient client = HttpUtil.CreateWebClient();
 
             try {
-                string raw = client.DownloadString(CurrentVersionFile);
-                Version latestVersion = new Version(raw);
+                string latest = client.DownloadString(CurrentVersionFile);
                 
-                if (latestVersion <= Server.Version) {
+                if (new Version(Server.Version) >= new Version(latest)) {
                     Logger.Log(LogType.SystemActivity, "No update found!");
                 } else if (NewerVersionDetected != null) {
                     NewerVersionDetected(null, EventArgs.Empty);
@@ -74,10 +75,10 @@ namespace MCGalaxy {
                 }
                 
                 WebClient client = HttpUtil.CreateWebClient();
-                client.DownloadFile(DLLLocation, "MCGalaxy_.update");
-                client.DownloadFile(EXELocation, "MCGalaxy.update");
-                client.DownloadFile(CLILocation, "MCGalaxyCLI.update");
-                client.DownloadFile(ChangelogLocation, "Changelog.txt");
+                client.DownloadFile(dllURL, "MCGalaxy_.update");
+                client.DownloadFile(guiURL, "MCGalaxy.update");
+                client.DownloadFile(cliURL, "MCGalaxyCLI.update");
+                client.DownloadFile(changelogURL, "Changelog.txt");
 
                 Level[] levels = LevelInfo.Loaded.Items;
                 foreach (Level lvl in levels) {
@@ -89,12 +90,17 @@ namespace MCGalaxy {
                 Player[] players = PlayerInfo.Online.Items;
                 foreach (Player pl in players) pl.save();
                 
+                // Although Process.Start checks path exists, that won't work correctly when running from mono
+                //  (since 'mono' exists but Updater.exe might not)
+                // So always explicitly check that Updater.exe exists here
+                string path = Path.Combine(Utils.FolderPath, "Updater.exe");
+                if (!File.Exists(path)) throw new FileNotFoundException("Unable to find " + path);
+                
                 bool mono = Type.GetType("Mono.Runtime") != null;
                 if (!mono) {
-                    Process.Start("Updater.exe", "securitycheck10934579068013978427893755755270374" + parent);
+                    Process.Start(path, "securitycheck10934579068013978427893755755270374" + exeName);
                 } else {
-                    string path = Path.Combine(Utils.FolderPath, "Updater.exe");
-                    Process.Start("mono", path + " securitycheck10934579068013978427893755755270374" + parent);
+                    Process.Start("mono", path + " securitycheck10934579068013978427893755755270374" + exeName);
                 }
                 Server.Stop(false, "Updating server.");
             } catch (Exception ex) {

@@ -1,5 +1,5 @@
 /*
-    Copyright 2015 MCGalaxy team
+    Copyright 2015 MCGalaxy
     
     Dual-licensed under the Educational Community License, Version 2.0 and
     the GNU General Public License, Version 3 (the "Licenses"); you may
@@ -90,16 +90,16 @@ namespace MCGalaxy.Commands.Maintenance {
                 PlayerDB.Update(args[0], PlayerData.ColumnIP, args[2]);
                 MessageDataChanged(p, args[0], args[1], args[2]);
             }  else if (opt == "modified") {
-                SetInteger(p, args, PlayerData.ColumnTotalBlocks, int.MaxValue, who,
+                SetInteger(p, args, PlayerData.ColumnBlocks, int.MaxValue, who,
                            v => who.TotalModified = v, type_lo);
             } else if (opt == "drawn") {
-                SetInteger(p, args, PlayerData.ColumnTotalCuboided, int.MaxValue, who,
+                SetInteger(p, args, PlayerData.ColumnDrawn, int.MaxValue, who,
                            v => who.TotalDrawn = v, type_lo);
             } else if (opt == "placed") {
-                SetInteger(p, args, PlayerData.ColumnTotalBlocks, int.MaxValue, who,
+                SetInteger(p, args, PlayerData.ColumnBlocks, int.MaxValue, who,
                            v => who.TotalPlaced = v, type_hi);
             } else if (opt == "deleted") {
-                SetInteger(p, args, PlayerData.ColumnTotalCuboided, int.MaxValue, who,
+                SetInteger(p, args, PlayerData.ColumnDrawn, int.MaxValue, who,
                            v => who.TotalDeleted = v, type_hi);
             } else if (opt == "totalkicked") {
                 SetInteger(p, args, PlayerData.ColumnKicked, 16777215, who,
@@ -112,7 +112,7 @@ namespace MCGalaxy.Commands.Maintenance {
                             v => who.TotalTime = v);
             } else if (opt == "color") {
                 SetColor(p, args, PlayerData.ColumnColor, who,
-                         v => who.color = (v.Length == 0 ? who.group.Color : v));
+                         v => who.UpdateColor(v.Length == 0 ? who.group.Color : v));
             } else if (opt == "titlecolor") {
                 SetColor(p, args, PlayerData.ColumnTColor, who,
                          v => who.titlecolor = v);
@@ -198,12 +198,12 @@ namespace MCGalaxy.Commands.Maintenance {
                 string dbValue = args[2];
                 // special case handling for packed forms of totalBlocks and totalCuboided
                 if (type == 1) {
-                    long packed = GetLong(args[0], column) & ~PlayerData.LowerBitsMask; // hi value only
+                    long packed = GetLong(args[0], column) & ~PlayerData.LoBitsMask; // hi value only
                     packed |= (uint)value;
                     dbValue = packed.ToString();
                 } else if (type == 2) {
-                    long packed = GetLong(args[0], column) & PlayerData.LowerBitsMask; // lo value only
-                    packed |= ((long)value) << PlayerData.LowerBits;
+                    long packed = GetLong(args[0], column) & PlayerData.LoBitsMask; // lo value only
+                    packed |= ((long)value) << PlayerData.HiBitsShift;
                     dbValue = packed.ToString();
                 }
                 PlayerDB.Update(args[0], column, dbValue);

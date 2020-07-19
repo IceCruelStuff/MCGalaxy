@@ -46,14 +46,14 @@ namespace MCGalaxy {
         public static ItemPerms OpchatPerms { 
             get { 
                 ItemPerms perms = CommandExtraPerms.Find("OpChat", 1);
-                return perms != null ? perms : new ItemPerms(LevelPermission.Operator, null, null);
+                return perms ?? new ItemPerms(LevelPermission.Operator);
             }
         }
         
         public static ItemPerms AdminchatPerms {
             get { 
                 ItemPerms perms = CommandExtraPerms.Find("AdminChat", 1);
-                return perms != null ? perms : new ItemPerms(LevelPermission.Admin, null, null);
+                return perms ?? new ItemPerms(LevelPermission.Admin);
             }
         }
         
@@ -148,7 +148,7 @@ namespace MCGalaxy {
         
         public static void MessageFrom(Player source, string msg,
                                        ChatMessageFilter filter = null, bool irc = false) {
-            if (source.level.SeesServerWideChat) {
+            if (source.level == null || source.level.SeesServerWideChat) {
                 MessageFrom(ChatScope.Global, source, msg, null, filter, irc);
             } else {
                 string prefix = Server.Config.ServerWideChat ? "<Local>" : "";

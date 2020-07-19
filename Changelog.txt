@@ -1,3 +1,123 @@
+v 1.9.2.3
+* Added: /ln alias for /line (fCraft compatibility)
+* Added: Packets for custom models
+* Removed: /bs shortcut for /blockspeed
+* Improved: Parse /shutdown delay as timespan instead of integer seconds only
+* Removed: /devs, link to MCGalaxy source in /sinfo instead
+* Improved: Make /eat an economy item, so price can be configured
+* Improved: Make p.Extensions public
+* Fixed: Doing /model while a zombie in ZS still changing it
+* Fixed: Can't /os map add on server without + after names when there are existing maps with your account name, but you aren't realmowner of them
+* Fixed: Can't see map joining/leaving messages on maps with localchat on
+
+v 1.9.2.2
+Added: /limit realms to set max realms a rank can have from in-game
+Added: /BotInfo that shows information on the given bot
+Added: A few more env presets
+Fixed: Unmuting player only showing first word of reason in unmute message
+Fixed: Issues with extremely long mute times on mono
+Fixed: Quit/RageQuit/Hacks/CrashServer should not be usable from console/IRC
+Fixed: Use accurate block name in help for /portal multi
+Fixed: Don't allow custom /pay messages while muted
+Fixed: If you in referee mode and flying, when moving to another zone, fly mode would get turned off
+Fixed: Crash if you try to select a rank in the gui that has over 255 realms
+Fixed: Colors sometimes being wrong in TNT wars
+Fixed: /tw set zone delete and /tw set zone delete all having swapped behaviour
+Fixed: Fuse block not getting destroyed in nodestroy zones in TNT wars
+Improved: Also track duration of action in /notes
+Improved: Referee mode should still follow jumpheight= in motd
+Improved: 'Reference X.dll;' and '//Reference X.dll' can be used for custom commands/plugins as alternative to 'Reference X.dll'
+Improved: Allow lb/gb copying multiple blocks at once
+Improved: You shouldn't be able to speak while pending /pass verification
+Improved: Include dimensions of heightmap and level in warning message when they don't match
+Improved: Can still use /bots and /zonemark in museums
+Improved: Allow using relative coords for gb/lb min/max (Thanks 1Leiz)
+
+v 1.9.2.0
+Fixed: Placed/deleted overflowing at 33 million
+Fixed: Turning off 'colours' option in GUI console shows raw colour codes
+Improved: More descriptive message when you're muted by chatmod
+Fixed: /hug and /high5 not working from console
+Fixed: Allow using /eat and /me from console
+Fixed: Zones getting lost with /resizelvl
+Improved: Don't lowercase command name in /cmdcreate output
+Fixed: /compile showing wrong error line number when source has 'reference' statements
+Fixed: Unloading custom commands not removing command aliases
+Improved: Simplify information in /ranks
+Fixed: /chatroom del and /chatroom spy throwing NullReferenceException
+Fixed: Not immediately asking for pass when you are ranked to a rank requiring password
+Fixed: Settings -> Eco -> Rank item in GUI crashing server on mono
+Fixed: Support 'reference' statements when compiling custom commands from GUI
+Improved: Simplify showing errors when compiling custom commands from GUI
+Fixed: /buy level erroring if level failed to generate
+
+v 1.9.1.9
+Improved: Make CalcEyeHeight take Y scale int account
+Improved: /tpp 0 0 0 puts you on the ground at level 0
+Fixed: Updating appearing to work with mono when Updater.exe is missing
+Improved: Backup path in server.properties defaults to relative path
+Improved: Log to player short summary of first 2 errors when compiling
+Fixed: Eyeheight of skeleton model
+Fixed: /copylvl,/renamelvl,/deletelvl consistently announce globally
+Fixed: /botai list showing wrong name when a . in a bot AI's name
+Fixed: /undo timespan not undoing some changes in rare cases
+Improved: Make help consistent with level/map
+Improved: /os map delete announces when level is deleted
+Improved: Rename /levels to /loaded and /worlds to /levels
+Fixed: Could manually set fallback for a custom block above 65
+
+v 1.9.1.8
+Fixed: Don't turn off 'auto unload' when setting main world
+Fixed: /copylvl not saving level to disc first. 
+Fixed: /cmdset/blockset not behaving properly when used by multiple players simultaneously
+Improved: /renamelvl work with unloaded maps
+Improved: /renamelvl update all portals tables, so any portals that previously went to the map go to the new map
+Fixed: Rare issue where physics in museums map caused map to never get freed from memory
+Improved: Support compiling unsafe C# code for custom commands/plugins
+Improved: Allow changing tablist group name of zombies/humans in zombie survival
+Fixed: Exploit with /undo that allowed spamming BlockDB
+Improved: Allow info/remove/edit ing multiple blocks using lb/gb
+Improved: Make SPlace a draw op
+Added: Support for custom particles
+Fixed: botai hunt instruction not interacting properly with other instructions
+Fixed: /tw end not working
+Fixed: Players who join mid-round in TNT wars when it is running on main map joining spec team instead
+Fixed: Not getting sent to team spawn first time you join TNT wars or CTF
+Fixed: Don't crash if trying to call SendMessage causes a DllNotFoundExceptipn
+
+v 1.9.1.7
+Fixed: Importing textures over 256 in .cw importer works now
+Fixed: Importing block ids over 255 in .cw importer works now
+Fixed: Rare bug where doors would get stuck as air form on saving
+Fixed: Incredibly rare bug which caused zones to get lost on saving level
+Fixed: Confusing behaviour where a block be both a portal/MB, portal/door etc. Now it can only be one at a time.
+Improved: Make /mirror x more logical in that it flips all X coordinates instead of Z coordinates (same for /mirror z)
+
+v 1.9.1.6
+Fixed: /money without arguments showing '' is not a valid player name
+Added: Ssupport for CPE VelocityControl
+Fixed: Some imported .dat worlds having the blocks shifted over
+Fixed: Bots on a map getting deleted if you changed x/y/z scale of a bot to a decimal number and your system language uses , instead of .
+
+v 1.9.1.5
+Fixed: GUI map gen only allowing map sizes in the dropdown
+Improved: 'server port utilities' dialog is clearer
+Improved: Allow custom whitelist kick message
+Fixed: Sending stopped working after a while with .NET core
+Fixed: doing /z then immediately doing /mb not resetting bottom right messages
+Fixed: /mynotes should have default rank permission of guest 
+Improved: Stare AI accounts for eyeheight and scale now
+Improved: Show bot's skin in /whonick bot.
+Improved: Player count is now based on unique connected IPs
+Improved: Show in tab list when maps have local chat …
+Improved: Don't restrict model bot axis scaling in /model
+Fixed: doing a large /copy, then adding three marks, causes any further marks to cause a blockchange error
+Fixed: warps list not getting cleared before loading on /server reload
+Fixed: replace and /replacenot getting affected by transforms
+Fixed: painting over grass while holding dirt appearing as air, even though the block was actually unchanged in the world
+Added: Support for CPE SetSpawnPoint
+Fixed: Not working with MySQL > 8.0
+
 v 1.9.1.4
 Fixed: Make @ offset work properly with /cut
 Improved: Bots track owner/creator, prevents non-staff modifying bots of other players

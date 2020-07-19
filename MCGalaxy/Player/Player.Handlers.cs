@@ -28,7 +28,6 @@ using MCGalaxy.Network;
 using MCGalaxy.SQL;
 using MCGalaxy.Util;
 using BlockID = System.UInt16;
-using BlockRaw = System.Byte;
 
 namespace MCGalaxy {
     public partial class Player : IDisposable {
@@ -61,7 +60,7 @@ namespace MCGalaxy {
             if (level.IsMuseum && Blockchange == null) return;
             bool deletingBlock = !painting && !placing;
 
-            if (Server.Config.verifyadmins && adminpen) {
+            if (Unverified) {
                 Message("%WYou must first verify with %T/Pass [Password]");
                 RevertBlock(x, y, z); return;
             }
@@ -188,8 +187,7 @@ namespace MCGalaxy {
                 
                 byte action = buffer[offset + 7];
                 if (action > 1) {
-                    const string msg = "Unknown block action!";
-                    Leave(msg, msg, true); return;
+                    Leave("Unknown block action!", true); return;
                 }
                 
                 LastAction = DateTime.UtcNow;
@@ -443,7 +441,7 @@ namespace MCGalaxy {
             if (ZSGame.Instance.HandlesChatMessage(this, text)) return;
             
             // Put this after vote collection so that people can vote even when chat is moderated
-            if (Server.chatmod && !voice) { Message("Chat moderation is on, you cannot speak."); return; }
+            if (!CheckCanSpeak("speak")) return;
             
             // Filter out bad words
             if (Server.Config.ProfanityFiltering) text = ProfanityFilter.Parse(text);
@@ -496,8 +494,7 @@ namespace MCGalaxy {
 
             text = Regex.Replace(text, "  +", " ");
             if (text.IndexOf('&') >= 0) {
-                const string msg = "Illegal character in chat message!";
-                Leave(msg, msg, true); return true;
+                Leave("Illegal character in chat message!", true); return true;
             }
             return text.Length == 0;
         }
@@ -612,7 +609,7 @@ namespace MCGalaxy {
             if (jailed) {
                 Message("You cannot use any commands while jailed."); return false;
             }
-            if (Server.Config.verifyadmins && adminpen && !(cmd == "pass" || cmd == "setpass")) {
+            if (Unverified && !(cmd == "pass" || cmd == "setpass")) {
                 Message("%WYou must verify first with %T/Pass [Password]"); return false;
             }
             
@@ -661,11 +658,11 @@ namespace MCGalaxy {
             if (reason != null) {
                 Message("Command is disabled as " + reason); return null;
             }
-            if (level.IsMuseum && !command.museumUsable) {
-                Message("Cannot use this command while in a museum."); return null;
+            if (level != null && level.IsMuseum && !command.museumUsable) {
+                Message("Cannot use %T/{0} %Swhile in a museum.", command.name); return null;
             }
             if (frozen && !command.UseableWhenFrozen) {
-                Message("Cannot use this command while frozen."); return null;
+                Message("Cannot use %T/{0} %Swhile frozen.", command.name); return null;
             }
             return command;
         }

@@ -28,12 +28,10 @@ namespace MCGalaxy {
         internal static List<Plugin> core = new List<Plugin>();
         public static List<Plugin> all = new List<Plugin>();
 
-        /// <summary> Loads all plugins from the given plugin .dll name. </summary>
-        public static bool Load(string name, bool startup) {
-            string path = IScripting.PluginPath(name);
-            
+        /// <summary> Loads all plugins from the given path. </summary>
+        public static bool Load(string path, bool startup) {
             try {
-                byte[] data = File.ReadAllBytes(path);
+                byte[] data  = File.ReadAllBytes(path);
                 Assembly lib = Assembly.Load(data);
                 List<Plugin> plugins = IScripting.LoadTypes<Plugin>(lib);
                 
@@ -50,7 +48,7 @@ namespace MCGalaxy {
         public static bool Load(Plugin p, bool startup) {
             try {
                 string ver = p.MCGalaxy_Version;
-                if (!String.IsNullOrEmpty(ver) && new Version(ver) > Server.Version) {
+                if (!String.IsNullOrEmpty(ver) && new Version(ver) > new Version(Server.Version)) {
                     Logger.Log(LogType.Warning, "Plugin ({0}) requires a more recent version of {1}!", p.name, Server.SoftwareName);
                     return false;
                 }
@@ -97,10 +95,8 @@ namespace MCGalaxy {
             LoadCorePlugin(new NotesPlugin());
             
             if (Directory.Exists("plugins")) {
-                foreach (string path in Directory.GetFiles("plugins", "*.dll")) {
-                    string name = Path.GetFileNameWithoutExtension(path);
-                    Load(name, true);
-                }
+                string[] files = Directory.GetFiles("plugins", "*.dll");
+                foreach (string path in files) { Load(path, true); }
             } else {
                 Directory.CreateDirectory("plugins");
             }

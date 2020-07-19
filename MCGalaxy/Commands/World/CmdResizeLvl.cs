@@ -1,5 +1,5 @@
 ﻿/*
-    Copyright 2015 MCGalaxy team
+    Copyright 2015 MCGalaxy
         
     Dual-licensed under the Educational Community License, Version 2.0 and
     the GNU General Public License, Version 3 (the "Licenses"); you may
@@ -50,7 +50,7 @@ namespace MCGalaxy.Commands.World {
             if (!LevelInfo.Check(p, data.Rank, lvl, "resize this level")) return false;
             
             ushort x = 0, y = 0, z = 0;
-            if (!CmdNewLvl.GetDimensions(p, args, 1, ref x, ref y, ref z)) return false;
+            if (!MapGen.GetDimensions(p, args, 1, ref x, ref y, ref z)) return false;
             
             bool confirmed = args.Length > 4 && args[4].CaselessEq("confirm");
             if (!confirmed && (x < lvl.Width || y < lvl.Height || z < lvl.Length)) {
@@ -60,7 +60,6 @@ namespace MCGalaxy.Commands.World {
             }
             
             Level resized = ResizeLevel(lvl, x, y, z);
-            if (resized == null) { p.Message("%WError resizing map."); return false; }
             LevelActions.Replace(lvl, resized);
             return true;
         }
@@ -99,11 +98,17 @@ namespace MCGalaxy.Commands.World {
                 Buffer.BlockCopy(src, 0, dst, 0, 16 * 16 * 16);
             }
             
+            // TODO: This copying is really ugly and probably not 100% right
             res.spawnx = lvl.spawnx; res.spawny = lvl.spawny; res.spawnz = lvl.spawnz;
             res.rotx = lvl.rotx; res.roty = lvl.roty;
             
             lock (lvl.saveLock) {
                 lvl.Backup(true);
+                
+                // Make sure zones are kept
+                res.Zones = lvl.Zones;
+                lvl.Zones = new VolatileArray<Zone>(false);
+            
                 IMapExporter.Formats[0].Write(LevelInfo.MapPath(lvl.name), res);
                 lvl.SaveChanges = false;
             }

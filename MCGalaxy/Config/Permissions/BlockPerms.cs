@@ -39,8 +39,10 @@ namespace MCGalaxy.Blocks {
         
         public static BlockPerms[] List = new BlockPerms[Block.ExtendedCount];
 
+        /// <summary> Find the permissions for the given block. </summary>
         public static BlockPerms Find(BlockID b) { return List[b]; }
         
+        /// <summary> Sets the permissions for the given block. </summary>
         public static void Set(BlockID b, LevelPermission min,
                                List<LevelPermission> allowed, List<LevelPermission> disallowed) {
             BlockPerms perms = List[b];
@@ -59,14 +61,15 @@ namespace MCGalaxy.Blocks {
         
         public void MessageCannotUse(Player p, string action) {
             p.Message("Only {0} can {1} {2}",
-                           Describe(), action, Block.GetName(p, ID));
+                      Describe(), action, Block.GetName(p, ID));
         }
         
         
-        static readonly object saveLock = new object();
+        static readonly object ioLock = new object();
+        /// <summary> Saves list of block permissions to disc. </summary>
         public static void Save() {
             try {
-                lock (saveLock) SaveCore();
+                lock (ioLock) SaveCore();
             } catch (Exception ex) { 
                 Logger.LogError("Error saving block perms", ex); 
             }
@@ -84,20 +87,21 @@ namespace MCGalaxy.Blocks {
         }
         
 
+        /// <summary> Loads list of block permissions from disc. </summary>
         public static void Load() {
-            SetDefaultPerms();
-            
-            // Custom permissions set by the user.
-            if (File.Exists(Paths.BlockPermsFile)) {
-                using (StreamReader r = new StreamReader(Paths.BlockPermsFile)) {
-                    ProcessLines(r);
-                }
-            } else {
-                Save();
-            }
+            lock (ioLock) LoadCore();
             
             foreach (Group grp in Group.GroupList) {
                 grp.SetUsableBlocks();
+            }
+        }
+
+        static void LoadCore() {
+            SetDefaultPerms();
+            if (!File.Exists(Paths.BlockPermsFile)) { Save(); return; }
+            
+            using (StreamReader r = new StreamReader(Paths.BlockPermsFile)) {
+                ProcessLines(r);
             }
         }
         

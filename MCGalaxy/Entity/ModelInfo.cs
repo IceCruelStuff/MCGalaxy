@@ -49,7 +49,7 @@ namespace MCGalaxy {
             new ModelInfo("pig",         28,28,28, 12),
             new ModelInfo("sheep",       20,40,20, 19),
             new ModelInfo("sheep_nofur", 20,40,20, 19),
-            new ModelInfo("skeleton",    16,56,16, 19),
+            new ModelInfo("skeleton",    16,56,16, 28),
             new ModelInfo("spider",      30,24,30,  8),
         };
             
@@ -121,9 +121,9 @@ namespace MCGalaxy {
         }
         
         /// <summary> Gives distance (in half-pixel world units) from feet to camera height </summary>
-        public static int CalcEyeHeight(string model) {
-            float scale = GetRawScale(model);
-            model = GetRawModel(model);
+        public static int CalcEyeHeight(Entity entity) {
+            float scale = (entity.ScaleY == 0) ? GetRawScale(entity.Model) : entity.ScaleY;
+            string model = GetRawModel(entity.Model);
             BlockID raw;
             if (BlockID.TryParse(model, out raw) && raw <= Block.MaxRaw) return 16; //lazily return middle of full block if it thinks it's a block ID.
             

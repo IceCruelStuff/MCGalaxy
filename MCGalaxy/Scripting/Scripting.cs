@@ -39,7 +39,11 @@ namespace MCGalaxy.Scripting {
         public abstract string ProviderName { get; }
         public abstract string CommandSkeleton { get; }
         
+        /// <summary> Adds language-specific default arguments to list of arguments. </summary>
+        protected abstract void PrepareArgs(CompilerParameters args);
+        /// <summary> C# compiler instance. </summary>
         public static IScripting CS = new ScriptingCS();
+        /// <summary> Visual Basic compiler instance. </summary>
         public static IScripting VB = new ScriptingVB();
         
         public IScripting() {
@@ -64,21 +68,30 @@ namespace MCGalaxy.Scripting {
             syntax = syntax.Replace(@"\t", "\t");
             syntax = syntax.Replace("\r\n", "\n");
             syntax = syntax.Replace("\n", Environment.NewLine);
-            syntax = string.Format(syntax, cmdName.Capitalize(), cmdName);
+            syntax = string.Format(syntax, cmdName.Capitalize());
             
             using (StreamWriter sw = new StreamWriter(path)) {
                 sw.WriteLine(syntax);
             }
         }
 
-        public bool Compile(string srcPath, string dstPath) {
+        /// <summary> Attempts to compile source code from the given file. </summary>
+        /// <remarks> Logs errors to player (summarised) and to IScripting.ErrorPath. </remarks>
+        public bool Compile(string srcPath, string dstPath, Player p) {
             CompilerParameters args = new CompilerParameters();
             args.GenerateExecutable = false;
-            args.OutputAssembly = dstPath;
-            
-            List<string> source = ReadSource(srcPath, args);
+            args.OutputAssembly     = dstPath;
+            return !Compile(srcPath, args, p).Errors.HasErrors;
+        }
+
+        const int maxLog = 2;
+        /// <summary> Attempts to compile source code from the given file. </summary>
+        /// <remarks> Logs errors to player (summarised) and to IScripting.ErrorPath. </remarks>        
+        public CompilerResults Compile(string srcPath, CompilerParameters args, Player p) {
+            int offset = 0;
+            List<string> source = ReadSource(srcPath, args, ref offset);
             CompilerResults results = CompileSource(source.Join(Environment.NewLine), args);
-            if (!results.Errors.HasErrors) return true;
+            if (!results.Errors.HasErrors) return results;
             
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("############################################################");
@@ -88,7 +101,7 @@ namespace MCGalaxy.Scripting {
             
             foreach (CompilerError err in results.Errors) {
                 string type = err.IsWarning ? "Warning" : "Error";                
-                sb.AppendLine(type + " on line " + err.Line + ":");
+                sb.AppendLine(type + " on line " + (err.Line + offset) + ":");
                 
                 if (err.Line > 0) sb.AppendLine(source[err.Line - 1]);
                 if (err.Column > 0) sb.Append(' ', err.Column - 1);
@@ -99,28 +112,49 @@ namespace MCGalaxy.Scripting {
                 sb.AppendLine();
             }
             
+            int logged = 0;
+            foreach (CompilerError err in results.Errors) {
+                string type = err.IsWarning ? "Warning" : "Error";
+                p.Message("%W{0} #{1} on line {2} - {3}", type, err.ErrorNumber, err.Line + offset, err.ErrorText);
+                
+                logged++;
+                if (logged >= maxLog) break;
+            }
+            if (results.Errors.Count > maxLog) p.Message(" %W.. and {0} more", results.Errors.Count - maxLog);
+            
             using (StreamWriter w = new StreamWriter(ErrorPath, true)) {
                 w.Write(sb.ToString());
             }
-            return !results.Errors.HasErrors;
+            return results;
         }
         
-        List<string> ReadSource(string path, CompilerParameters args) {
+        static bool IsReferenceLine(string line) {
+            // Originally only 'Reference X.dll' syntax was supported
+            // Later '//Reference X.dll' was added, and is preferred
+            return line.CaselessStarts("reference ") || line.CaselessStarts("//reference ");
+        }
+        
+        static List<string> ReadSource(string path, CompilerParameters args, ref int offset) {
             List<string> lines = Utils.ReadAllLinesList(path);
             // Allow referencing other assemblies using 'Reference [assembly name]' at top of the file
             for (int i = 0; i < lines.Count; i++) {
-                if (!lines[i].CaselessStarts("reference ")) break;
+                if (!IsReferenceLine(lines[i])) break;
                 
                 int index = lines[i].IndexOf(' ') + 1;
-                string assem = lines[i].Substring(index);
+                // For consistency with C#, treat 'Reference X.dll;' as 'Reference X.dll'
+                string assem = lines[i].Substring(index).Replace(";", "");
+                
                 args.ReferencedAssemblies.Add(assem);
-                lines.RemoveAt(i); i--;
+                lines.RemoveAt(i);
+                offset++; i--;
             }
             return lines;
         }
         
+        /// <summary> Compiles the given source code. </summary>
         public CompilerResults CompileSource(string source, CompilerParameters args) {
             args.ReferencedAssemblies.Add("MCGalaxy_.dll");
+            PrepareArgs(args);
             source = source.Replace("MCLawl", "MCGalaxy");
             source = source.Replace("MCForge", "MCGalaxy");
             return compiler.CompileAssemblyFromSource(args, source);
@@ -141,6 +175,7 @@ namespace MCGalaxy.Scripting {
             }
         }
         
+        /// <summary> Loads and registers all the commands in the given dll. </summary>
         public static string Load(string path) {
             try {
                 byte[] data = File.ReadAllBytes(path);
@@ -157,8 +192,6 @@ namespace MCGalaxy.Scripting {
                     return file + " does not exist in the DLL folder, or is missing a dependency. Details in the error log.";
                 } else if (ex is BadImageFormatException) {
                     return file + " is not a valid assembly, or has an invalid dependency. Details in the error log.";
-                } else if (ex is PathTooLongException) {
-                    return "Class name is too long.";
                 } else if (ex is FileLoadException) {
                     return file + " or one of its dependencies could not be loaded. Details in the error log.";
                 }
@@ -167,6 +200,8 @@ namespace MCGalaxy.Scripting {
             return null;
         }
         
+        /// <summary> Constructs instances of all types which derive from T in the given assembly. </summary>
+        /// <returns> The list of constructed instances. </returns>
         public static List<T> LoadTypes<T>(Assembly lib) {
             List<T> instances = new List<T>();
             

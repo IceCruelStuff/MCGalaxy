@@ -45,10 +45,7 @@ namespace MCGalaxy.Commands.Misc {
                 Chat.MessageGlobal(rankMsg);
                 who.Message("You are now ranked {0}%S, type /Help for your new set of commands.", newRank.ColoredName);
             }
-            
-            who.color = newRank.Color;
-            Entities.GlobalRespawn(who);
-            who.SetPrefix();            
+        	who.UpdateColor(newRank.Color);         
         }
         
         public override void Help(Player p) {

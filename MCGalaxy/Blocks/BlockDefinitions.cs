@@ -91,9 +91,8 @@ namespace MCGalaxy {
         }
         
         static ConfigElement[] elems;
-        public static BlockDefinition[] Load(bool global, string mapName) {
-            BlockDefinition[] defs = new BlockDefinition[Block.ExtendedCount];
-            string path = global ? GlobalPath : "blockdefs/lvl_" + mapName + ".json";
+        public static BlockDefinition[] Load(string path) {
+        	BlockDefinition[] defs = new BlockDefinition[Block.ExtendedCount];
             if (!File.Exists(path)) return defs;
             if (elems == null) elems = ConfigElement.GetAll(typeof(BlockDefinition));
             
@@ -117,6 +116,9 @@ namespace MCGalaxy {
                     } else {
                         defs[block] = def;
                     }
+                    
+                    // In case user manually edited fallback in the json file
+                    def.FallBack = Math.Min(def.FallBack, Block.CpeMaxBlock);
                 }
             } catch (Exception ex) {
                 Logger.LogError("Error Loading block defs from " + path, ex);
@@ -126,7 +128,7 @@ namespace MCGalaxy {
         
         public static void Save(bool global, Level lvl) {
             if (elems == null) elems = ConfigElement.GetAll(typeof(BlockDefinition));
-            string path = global ? GlobalPath : "blockdefs/lvl_" + lvl.MapName + ".json";
+            string path = global ? GlobalPath : Paths.MapBlockDefs(lvl.MapName);
             BlockDefinition[] defs = global ? GlobalDefs : lvl.CustomBlockDefs;
             
             using (StreamWriter w = new StreamWriter(path)) {
@@ -149,7 +151,7 @@ namespace MCGalaxy {
         
         public static void LoadGlobal() {
             BlockDefinition[] oldDefs = GlobalDefs;
-            GlobalDefs = Load(true, null);
+            GlobalDefs = Load(GlobalPath);
             GlobalDefs[Block.Air] = null;
             
             try {

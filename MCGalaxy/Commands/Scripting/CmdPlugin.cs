@@ -61,7 +61,7 @@ namespace MCGalaxy.Commands.Scripting {
             
             if (!File.Exists(srcPath)) {
                 p.Message("File &9{0} %Snot found.", srcPath);
-            } else if (engine.Compile(srcPath, dstPath)) {
+            } else if (engine.Compile(srcPath, dstPath, p)) {
                 p.Message("Plugin compiled successfully.");
             } else {
                 p.Message("%WCompilation error. See " + IScripting.ErrorPath + " for more information.");
@@ -71,7 +71,7 @@ namespace MCGalaxy.Commands.Scripting {
         static void LoadPlugin(Player p, string name) {
             string path = IScripting.PluginPath(name);
             if (File.Exists(path)) {
-                if (Plugin.Load(name, false)) {
+                if (Plugin.Load(path, false)) {
                     p.Message("Plugin loaded successfully.");
                 } else {
                     p.Message("%WError loading plugin. See error logs for more information.");
@@ -107,7 +107,7 @@ namespace MCGalaxy.Commands.Scripting {
             p.Message("Creating a plugin example source");
             string creator = p.IsSuper ? Server.Config.Name : p.name;
             string syntax = pluginSrc.Replace(@"\t", "\t");
-            syntax = string.Format(syntax, name, creator, Server.VersionString);
+            syntax = string.Format(syntax, name, creator, Server.Version);
             File.WriteAllText("plugins/" + name + ".cs", syntax);
         }
         

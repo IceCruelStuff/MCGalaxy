@@ -14,6 +14,7 @@ permissions and limitations under the Licenses.
 */
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MCGalaxy {
@@ -27,36 +28,35 @@ namespace MCGalaxy {
             message = Regex.Replace(message, @"(&[0-9a-f])+$", "");
 
             int limit = NetUtils.StringSize; string color = "";
-            while ( message.Length > 0 ) {
-                //if (Regex.IsMatch(message, "&a")) break;
+            while (message.Length > 0) {
 
-                if ( lines.Count > 0 ) {
-                    if ( message[0] == '&' )
+                if (lines.Count > 0 ) {
+                    if (message[0] == '&')
                         message = "> " + message.Trim();
                     else
                         message = "> " + color + message.Trim();
                 }
 
-                if ( message.IndexOf("&") == message.IndexOf("&", message.IndexOf("&") + 1) - 2 )
+                if (message.IndexOf("&") == message.IndexOf("&", message.IndexOf("&") + 1) - 2)
                     message = message.Remove(message.IndexOf("&"), 2);
 
-                if ( message.Length <= limit ) { lines.Add(message); break; }
-                for ( int i = limit - 1; i > limit - 20; --i )
-                    if ( message[i] == ' ' ) {
+                if (message.Length <= limit) { lines.Add(message); break; }
+                for (int i = limit - 1; i > limit - 20; i--)
+                    if (message[i] == ' ') {
                         lines.Add(message.Substring(0, i));
                         goto Next;
                     }
 
             retry:
-                if ( message.Length == 0 || limit == 0 ) { return lines; }
+                if (message.Length == 0 || limit == 0) { return lines; }
 
                 try {
-                    if ( message.Substring(limit - 2, 1) == "&" || message.Substring(limit - 1, 1) == "&" ) {
+                    if (message.Substring(limit - 2, 1) == "&" || message.Substring(limit - 1, 1) == "&") {
                         message = message.Remove(limit - 2, 1);
                         limit -= 2;
                         goto retry;
                     }
-                    else if ( message[limit - 1] < 32 || message[limit - 1] > 127 ) {
+                    else if (message[limit - 1] < 32 || message[limit - 1] > 127) {
                         message = message.Remove(limit - 1, 1);
                         limit -= 1;
                         //goto retry;
@@ -66,29 +66,29 @@ namespace MCGalaxy {
                 lines.Add(message.Substring(0, limit));
 
             Next: message = message.Substring(lines[lines.Count - 1].Length);
-                if ( lines.Count == 1 ) limit = 60;
+                if (lines.Count == 1) limit = 60;
 
                 int index = lines[lines.Count - 1].LastIndexOf('&');
-                if ( index != -1 ) {
-                    if ( index < lines[lines.Count - 1].Length - 1 ) {
+                if (index != -1) {
+                    if (index < lines[lines.Count - 1].Length - 1) {
                         char next = lines[lines.Count - 1][index + 1];
-                        if ( Colors.Map(ref next) ) color = "&" + next;
-                        if ( index == lines[lines.Count - 1].Length - 1 ) {
+                        if (Colors.Map(ref next)) color = "&" + next;
+                        if (index == lines[lines.Count - 1].Length - 1) {
                             lines[lines.Count - 1] = lines[lines.Count - 1].Substring(0, lines[lines.Count - 1].Length - 2);
                         }
                     }
-                    else if ( message.Length != 0 ) {
+                    else if (message.Length != 0) {
                         char next = message[0];
-                        if ( Colors.Map(ref next) ) color = "&" + next;
+                        if (Colors.Map(ref next)) color = "&" + next;
                         lines[lines.Count - 1] = lines[lines.Count - 1].Substring(0, lines[lines.Count - 1].Length - 1);
                         message = message.Substring(1);
                     }
                 }
             }
-            for ( int i = 0; i < lines.Count; i++ ) // Gotta do it the old fashioned way...
+            for (int i = 0; i < lines.Count; i++) // Gotta do it the old fashioned way...
             {
                 char[] temp = lines[i].ToCharArray();
-                if ( temp[temp.Length - 2] == '&' ) {
+                if (temp[temp.Length - 2] == '&') {
                     temp[temp.Length - 1] = ' ';
                     temp[temp.Length - 2] = ' ';
                 }
@@ -101,43 +101,48 @@ namespace MCGalaxy {
         
         static string CleanupColorCodes(string value) {
             if (value.IndexOf('&') == -1) return value;
-            char[] output = new char[value.Length];
-            int used = 0, last = -200;
+            StringBuilder sb = new StringBuilder(value.Length);
+            int lastIdx  = -1;
             char lastCol = 'f';
+            bool combinable = false;
             
             for (int i = 0; i < value.Length; i++) {
-                // Not a color code so do nothing
-                if (value[i] != '&') { 
-                    output[used++] = value[i]; continue;
+                char c = value[i];
+                // Definitely not a colour code
+                if (c != '&') {
+                    if (c != ' ') combinable = false;
+                    sb.Append(c); continue;
                 }
+                
+                // Maybe still not a colour code
                 if (i == value.Length - 1 || !ValidColor(value[i + 1])) {
-                    output[used++] = value[i]; continue;
+                    combinable = false;
+                    sb.Append(c); continue;
                 }
+                
                 char col = value[i + 1];
                 if (col >= 'A' && col <= 'F') col += ' ';
                 
-                // Check for double color codes in a row
-                if (last == i - 2) {
-                    used--;
-                    output[used++] = col;
-                }
-                // Check for same color codes but not in a row
+                // Don't append duplicate colour codes
                 if (lastCol != col) {
-                    output[used++] = '&';
-                    output[used++] = col;
+                    // Remove first colour code in "&a&b or "&a   &b"
+                    if (combinable) sb.Remove(lastIdx, 2);
+                    
+                    sb.Append('&').Append(col);
+                    lastIdx = sb.Length - 2;
+                    lastCol = col;
+                    combinable = true;
                 }
-                last = i; i++; // skip over color code
-                lastCol = col;
+                i++; // skip over color code
             }
             
             // Trim trailing color codes
-            int j = value.Length;
-            while ((j - 2) >= 0) {
-                if (value[j - 2] != '&') break;
-                if (!ValidColor(value[j - 1])) break;
-                j -= 2; used -= 2;
+            while (sb.Length >= 2) {
+                if (sb[sb.Length - 2] != '&')       break;
+                if (!ValidColor(sb[sb.Length - 1])) break;
+                sb.Remove(sb.Length - 2, 2);
             }
-            return new string(output, 0, used);
-        }        
+            return sb.ToString();
+        }
     }
 }

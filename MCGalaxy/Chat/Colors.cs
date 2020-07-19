@@ -99,7 +99,7 @@ namespace MCGalaxy {
                 if (!p.Supports(CpeExt.TextColors)) continue;
                 p.Send(Packet.SetTextColor(col));
             }
-            SaveList();
+            Save();
         }
 
         public static string Parse(string name) {
@@ -245,6 +245,8 @@ namespace MCGalaxy {
             }
         }
         
+        /// <summary> Removes all instances of % or &amp; and the character that follows.
+        /// Does *not* check if the character pair makes a real color </summary>
         public static string Strip(string value) {
             if (value.IndexOf('%') == -1 && value.IndexOf('&') == -1) return value;
             char[] output = new char[value.Length];
@@ -256,6 +258,26 @@ namespace MCGalaxy {
                     i++; // Skip over the following color code.
                 } else {
                     output[usedChars++] = token;
+                }
+            }
+            return new string(output, 0, usedChars);
+        }
+        
+        /// <summary> Removes all colors that are currently used.
+        /// This means % or &amp; may be kept if they are not followed a used color code </summary>
+        public static string StripUsed(string message) {
+            if (message.IndexOf('%') == -1 && message.IndexOf('&') == -1) return message;
+            char[] output = new char[message.Length];
+            int usedChars = 0;
+            
+            for (int i = 0; i < message.Length; i++) {
+                char c = message[i];
+                if ( (i < message.Length-1) &&
+                     (c == '%' || c == '&') &&
+                     (IsStandard(message[i+1]) || IsDefined(message[i+1])) ) {
+                    i++; // Skip over the following color code.
+                } else {
+                    output[usedChars++] = c;
                 }
             }
             return new string(output, 0, usedChars);
@@ -290,7 +312,17 @@ namespace MCGalaxy {
         }
 
         
-        internal static void SaveList() {
+        static readonly object ioLock = new object();
+        /// <summary> Saves list of changed colors to disc. </summary>
+        public static void Save() {
+            try {
+                lock (ioLock) SaveCore();
+            } catch (Exception ex) {
+                Logger.LogError("Error saving " + Paths.CustomColorsFile, ex);
+            }
+        }
+        
+        static void SaveCore() {
             using (StreamWriter w = new StreamWriter(Paths.CustomColorsFile)) {
                 foreach (ColorDesc col in List) {
                     if (!col.IsModified()) continue;
@@ -299,9 +331,14 @@ namespace MCGalaxy {
                                 " " + col.R + " " + col.G + " " + col.B + " " + col.A);
                 }
             }
+        }        
+
+        /// <summary> Loads list of changed colors from disc. </summary>
+        public static void Load() {
+            lock (ioLock) LoadCore();
         }
         
-        internal static void LoadList() {
+        static void LoadCore() {
             if (!File.Exists(Paths.CustomColorsFile)) return;
             string[] lines = File.ReadAllLines(Paths.CustomColorsFile);
             ColorDesc col = default(ColorDesc);
@@ -390,6 +427,7 @@ namespace MCGalaxy {
             b = (byte)(191 * ((hex >> 0) & 1) + 64 * (hex >> 3));
         }
         
+        /// <summary> Whether this colour has been modified from its default values. </summary>
         public bool IsModified() {
             if ((Code >= '0' && Code <= '9') || (Code >= 'a' && Code <= 'f')) {
                 ColorDesc def = Colors.DefaultCol(Code);

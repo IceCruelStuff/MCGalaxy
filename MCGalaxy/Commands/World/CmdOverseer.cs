@@ -53,6 +53,7 @@ namespace MCGalaxy.Commands.World {
         }
         
         public override void Help(Player p, string message) {
+            message = message.SplitSpaces()[0]; // only first argument
             foreach (SubCommand subCmd in subCommands) {
                 if (!subCmd.Group.CaselessEq(message)) continue;
                 p.MessageLines(subCmd.Help);
@@ -104,37 +105,30 @@ namespace MCGalaxy.Commands.World {
             Command.Find(cmd).Use(p, args, data);
         }
         
+        static string GetLevelName(Player p, int i) {
+            string name = p.name.ToLower();
+            return i == 1 ? name : name + i;
+        }
+        
         static string NextLevel(Player p) {
             string level = p.name.ToLower();
-            if (LevelInfo.MapExists(level) || LevelInfo.MapExists(level + "00")) {
-                // subtract 1, because we accounted for it in above if statement
-                for (int i = 2; i < (p.group.OverseerMaps - 1) + 2; i++) {
-                    if (LevelInfo.MapExists(p.name.ToLower() + i)) continue;
-                    return p.name.ToLower() + i;
-                }
-                
-                p.Message("You have reached the limit for your overseer maps."); return null;
+            int realms   = p.group.OverseerMaps;
+            
+            for (int i = 1; realms > 0; i++) {
+            	string map = GetLevelName(p, i);
+            	if (!LevelInfo.MapExists(map)) return map;
+            	
+            	if (LevelInfo.IsRealmOwner(p.name, map)) realms--;
             }
-            return level;
-        }
-
-        static string FirstMapName(Player p) {
-            /* Returns the proper name of the User Level. By default the User Level will be named
-             * "UserName" but was earlier named "UserName00". Therefore the Script checks if the old
-             * map name exists before trying the new (and correct) name. All Operations will work with
-             * both map names (UserName and UserName00)
-             * I need to figure out how to add a system to do this with the players second map.
-             */
-            if (LevelInfo.MapExists(p.name.ToLower() + "00"))
-                return p.name.ToLower() + "00";
-            return p.name.ToLower();
+            p.Message("You have reached the limit for your overseer maps."); return null;
         }
 
         #region Help messages
 
         static string[] blockPropsHelp = new string[] {
             "%T/os blockprops [id] [action] <args> %H- Changes properties of blocks in your map.",
-            "%H  See %T/Help blockprops %Hfor a list of actions",
+            "%H  See %T/Help blockprops %Hfor how to use this command.",
+            "%H  Remember to substitute /blockprops for /os blockprops when using the command based on the help",
         };
         
         static string[] envHelp = new string[] {
@@ -163,7 +157,8 @@ namespace MCGalaxy.Commands.World {
 
         static string[] levelBlockHelp = new string[] {
             "%T/os lb [action] <args> %H- Manages custom blocks on your map.",
-            "%H  See %T/Help lb %Hfor a list of actions",
+            "%H  See %T/Help lb %Hfor how to use this command.",
+            "%H  Remember to substitute /lb for /os lb when using the command based on the help",
         };
         
         static string[] mapHelp = new string[] {

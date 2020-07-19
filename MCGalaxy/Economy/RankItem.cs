@@ -79,18 +79,16 @@ namespace MCGalaxy.Eco {
             return null;
         }
         
-        protected internal override void OnBuyCommand(Player p, string message, string[] args) {
-            if (args.Length >= 2) {
+        protected internal override void OnPurchase(Player p, string args) {
+            if (args.Length > 0) {
                 p.Message("%WYou cannot provide a rank name, use %T/Buy rank %Wto buy the NEXT rank."); return;
             }
             
             RankEntry nextRank = NextRank(p);
             if (nextRank == null) {
                 p.Message("%WYou are already at or past the max buyable rank"); return;
-            }           
-            if (p.money < nextRank.Price) {
-                p.Message("%WYou don't have enough &3" + Server.Config.Currency + " %Wto buy the next rank"); return;
             }
+            if (!CheckPrice(p, nextRank.Price, "the next rank")) return;
             
             Group rank = Group.Find(nextRank.Perm); // TODO: What if null reference happens here
             Command.Find("SetRank").Use(Player.Console, p.name + " " + rank.Name);
@@ -98,7 +96,7 @@ namespace MCGalaxy.Eco {
             Economy.MakePurchase(p, nextRank.Price, "&3Rank: " + rank.ColoredName);
         }
         
-        protected internal override void OnSetupCommand(Player p, string[] args) {
+        protected internal override void OnSetup(Player p, string[] args) {
             if (args[1].CaselessEq("price")) {
                 Group grp = Matcher.FindRanks(p, args[2]);
                 if (grp == null) return;
@@ -119,12 +117,12 @@ namespace MCGalaxy.Eco {
                     p.Message("%WThat rank was not buyable to begin with.");
                 }
             } else {
-                OnSetupCommandHelp(p);
+                OnSetupHelp(p);
             }
         }
         
-        protected internal override void OnSetupCommandHelp(Player p) {
-            base.OnSetupCommandHelp(p);
+        protected internal override void OnSetupHelp(Player p) {
+            base.OnSetupHelp(p);
             p.Message("%T/Eco rank price [rank] [amount]");
             p.Message("%HSets how many &3{0} %Hthat rank costs.", Server.Config.Currency);
             p.Message("%T/Eco rank remove [rank]");

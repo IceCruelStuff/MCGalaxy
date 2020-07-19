@@ -146,7 +146,7 @@ namespace MCGalaxy.Commands.Building {
                 }
             }
             
-            List<PortalExit> exits = Portal.GetAll(p.level.MapName);
+            List<PortalExit> exits = Portal.GetAllExits(p.level.MapName);
             foreach (PortalExit exit in exits) {
                 if (exit.Map != p.level.MapName) continue;
                 
@@ -189,7 +189,7 @@ namespace MCGalaxy.Commands.Building {
             p.Message("%T/Portal [block]");
             p.Message("%HPlace a block for the entry, then another block for exit.");
             p.Message("%T/Portal [block] multi");
-            p.Message("%HPlace multiple blocks for entries, then a red block for exit.");
+            p.Message("%HPlace multiple blocks for entries, then a {0} block for exit.", Block.GetName(p, Block.Red));
             p.Message("%H  Note: The exit can be on a different level.");
             List<string> names = SupportedBlocks(p); 
             p.Message("%H  Supported blocks: %S{0}", names.Join());

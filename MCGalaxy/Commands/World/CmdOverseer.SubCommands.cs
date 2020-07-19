@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.IO;
 using MCGalaxy.Commands.CPE;
 using MCGalaxy.Commands.Moderation;
+using MCGalaxy.Generator;
 
 namespace MCGalaxy.Commands.World {
     public sealed partial class CmdOverseer : Command2 {
@@ -37,15 +38,12 @@ namespace MCGalaxy.Commands.World {
 
         static void HandleGoto(Player p, string map, string ignored) {
             byte mapNum = 0;
-            if (map.Length == 0 || map == "1") {
-                map = FirstMapName(p);
-            } else {
-                if (!byte.TryParse(map, out mapNum)) {
-                    p.MessageLines(gotoHelp);
-                    return;
-                }
-                map = p.name.ToLower() + map;
+            if (map.Length == 0) map = "1";
+            
+            if (!byte.TryParse(map, out mapNum)) {
+                p.MessageLines(gotoHelp); return;
             }
+            map = GetLevelName(p, mapNum);
             
             if (LevelInfo.FindExact(map) == null)
                 LevelActions.Load(p, map, !Server.Config.AutoLoadMaps);
@@ -159,7 +157,7 @@ namespace MCGalaxy.Commands.World {
             Level lvl = newLvl.GenerateMap(p, args, p.DefaultCmdData);
             if (lvl == null) return;
             
-            SetPerms(p, lvl);
+            MapGen.SetRealmPerms(p, lvl);
             p.Message("Use %T/os zone add [name] %Sto allow other players to build in the map.");
             
             try {
@@ -170,31 +168,12 @@ namespace MCGalaxy.Commands.World {
             }
         }
         
-        internal static void SetPerms(Player p, Level lvl) {
-            lvl.Config.RealmOwner = p.name;
-            const LevelPermission rank = LevelPermission.Nobody;
-            lvl.BuildAccess.Whitelist(Player.Console, rank, lvl, p.name);
-            lvl.VisitAccess.Whitelist(Player.Console, rank, lvl, p.name);
-
-            Group grp = Group.Find(Server.Config.OSPerbuildDefault);
-            if (grp == null) return;
-            
-            lvl.BuildAccess.SetMin(Player.Console, rank, lvl, grp);
-        }
-        
         static void DeleteMap(Player p, string value) {
             if (value.Length > 0) {
                 p.Message("To delete your current map, type %T/os map delete");
                 return;
             }
-            
-            string map = p.level.name;
-            p.Message("Created backup.");
-            if (LevelActions.Delete(map)) {
-                p.Message("Map " + map + " was removed.");
-            } else {
-                p.Message(LevelActions.DeleteFailedMessage);
-            }
+            UseCommand(p, "DeleteLvl", p.level.name);
         }
 
 

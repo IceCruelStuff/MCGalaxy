@@ -118,13 +118,29 @@ namespace MCGalaxy {
             return true;
         }
         
+        void Cleanup() {
+            // TODO: don't thread.Abort(), properly stop physics thread
+            try {
+                physThread.Abort();
+                physThread.Join();
+            } catch {
+            }
+            
+            Dispose();
+            Server.DoGC();
+        }
+        
+        /// <summary> Attempts to automatically unload this map. </summary>
         public bool AutoUnload() {
-            return Server.Config.AutoLoadMaps && Config.AutoUnload
-                && !IsMuseum && !HasPlayers() && Unload(true);
+        	bool can = IsMuseum || (Server.Config.AutoLoadMaps && Config.AutoUnload && !HasPlayers());
+        	return can && Unload(true);
         }
         
         public bool Unload(bool silent = false, bool save = true) {
-            if (Server.mainLevel == this || IsMuseum) return false;
+            if (Server.mainLevel == this) return false;
+            // Still cleanup resources, even if this is not a true level
+            if (IsMuseum) { Cleanup(); return true; }
+            
             OnLevelUnloadEvent.Call(this);
             if (cancelunload) {
                 Logger.Log(LogType.SystemActivity, "Unload canceled by Plugin! (Map: {0})", name);
@@ -148,15 +164,7 @@ namespace MCGalaxy {
                 Logger.LogError("Error saving bots", ex);
             }
 
-            try {
-                physThread.Abort();
-                physThread.Join();
-            } catch {
-            }
-            
-            Dispose();
-            Server.DoGC();
-
+            Cleanup();
             if (!silent) Chat.MessageOps(ColoredName + " %Swas unloaded.");
             Logger.Log(LogType.SystemActivity, name + " was unloaded.");
             return true;
@@ -170,11 +178,6 @@ namespace MCGalaxy {
                     PlayerActions.ChangeMap(p, Server.mainLevel);
                 }
             }
-        }
-
-        /// <summary> Returns whether the given coordinates are insides the boundaries of this level. </summary>
-        public bool InBound(ushort x, ushort y, ushort z) {
-            return x >= 0 && y >= 0 && z >= 0 && x < Width && y < Height && z < Length;
         }
 
         public void SaveSettings() { if (!IsMuseum) Config.SaveFor(MapName); }
@@ -216,7 +219,7 @@ namespace MCGalaxy {
         void SaveCore(string path) {
             if (blocks == null) return;
             if (File.Exists(path)) {
-                string prevPath = LevelInfo.PrevPath(name);
+                string prevPath = Paths.PrevMapFile(name);
                 if (File.Exists(prevPath)) File.Delete(prevPath);
                 File.Copy(path, prevPath, true);
                 File.Delete(path);
@@ -294,23 +297,18 @@ namespace MCGalaxy {
             
             try {
                 string propsPath = LevelInfo.PropsPath(lvl.MapName);
-                bool propsExisted = lvl.Config.Load(propsPath);
-                
-                if (propsExisted) {
+                if (lvl.Config.Load(propsPath)) {
                     lvl.SetPhysics(lvl.Config.Physics);
                 } else {
                     Logger.Log(LogType.ConsoleMessage, ".properties file for level {0} was not found.", lvl.MapName);
                 }
-                
-                // Backwards compatibility for older levels which had .env files.
-                string envPath = "levels/level properties/" + lvl.MapName + ".env";
-                lvl.Config.Load(envPath);
             } catch (Exception e) {
                 Logger.LogError(e);
             }
             lvl.BlockDB.Cache.Enabled = lvl.Config.UseBlockDB;
             
-            BlockDefinition[] defs = BlockDefinition.Load(false, lvl.MapName);
+            string blockDefsPath   = Paths.MapBlockDefs(lvl.MapName);
+            BlockDefinition[] defs = BlockDefinition.Load(blockDefsPath);
             for (int b = 0; b < defs.Length; b++) {
                 if (defs[b] == null) continue;
                 lvl.UpdateCustomBlock((BlockID)b, defs[b]);

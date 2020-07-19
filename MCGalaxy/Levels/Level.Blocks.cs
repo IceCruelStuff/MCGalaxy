@@ -43,7 +43,7 @@ namespace MCGalaxy {
         public byte[][] CustomBlocks;
         public int ChunksX, ChunksY, ChunksZ;
         
-        /// <summary> Relatively quick guess at whether this map might use custom blocks. </summary>
+        /// <summary> Relatively quick guess at whether this level might use custom blocks. </summary>
         public bool MightHaveCustomBlocks() {
             byte[][] customBlocks = CustomBlocks;
             if (customBlocks == null) return false;
@@ -80,7 +80,7 @@ namespace MCGalaxy {
         }
         
         /// <summary> Gets the block at the given coordinates. </summary>
-        /// <returns> Block.Invalid if coordinates outside map. </returns>
+        /// <returns> Block.Invalid if coordinates outside level. </returns>
         public BlockID GetBlock(ushort x, ushort y, ushort z) {
             if (x >= Width || y >= Height || z >= Length || blocks == null) return Block.Invalid;
             byte raw = blocks[x + Width * (z + y * Length)];
@@ -94,7 +94,7 @@ namespace MCGalaxy {
         }
         
         /// <summary> Gets the block at the given coordinates. </summary>
-        /// <returns> Block.Invalid if coordinates outside map. </returns>
+        /// <returns> Block.Invalid if coordinates outside level. </returns>
         public BlockID GetBlock(ushort x, ushort y, ushort z, out int index) {
             if (x >= Width || y >= Height || z >= Length || blocks == null) { index = -1; return Block.Invalid; }
             index = x + Width * (z + y * Length);
@@ -149,12 +149,6 @@ namespace MCGalaxy {
             Changed = true;
         }
         
-        public void SetExtTile(ushort x, ushort y, ushort z, byte extBlock) {
-            int index = PosToInt(x, y, z);
-            if (index < 0 || blocks == null) return;
-            FastSetExtTile(x, y, z, extBlock);
-        }
-        
         public void FastSetExtTile(ushort x, ushort y, ushort z, byte extBlock) {
             int cx = x >> 4, cy = y >> 4, cz = z >> 4;
             int cIndex = (cy * ChunksZ + cz) * ChunksX + cx;
@@ -174,6 +168,23 @@ namespace MCGalaxy {
             
             if (chunk == null) return;
             chunk[(y & 0x0F) << 8 | (z & 0x0F) << 4 | (x & 0x0F)] = 0;
+        }
+        
+        public void SetBlock(ushort x, ushort y, ushort z, BlockID block) {
+            int index = PosToInt(x, y, z);
+            if (blocks == null || index < 0) return;
+            Changed = true;
+            
+            if (block >= Block.Extended) {
+                #if TEN_BIT_BLOCKS
+                blocks[index] = Block.ExtendedClass[block >> Block.ExtendedShift];
+                #else
+                blocks[index] = Block.custom_block;
+                #endif
+                FastSetExtTile(x, y, z, (BlockRaw)block);
+            } else {
+                blocks[index] = (BlockRaw)block;
+            }
         }
         
         
@@ -428,6 +439,13 @@ namespace MCGalaxy {
         
         public bool IsValidPos(int x, int y, int z) {
             return x >= 0 && y >= 0 && z >= 0 && x < Width && y < Height && z < Length;
+        }
+        
+        public Vec3S32 ClampPos(Vec3S32 P) {
+            P.X = Math.Max(0, Math.Min(P.X, Width  - 1));
+            P.Y = Math.Max(0, Math.Min(P.Y, Height - 1));
+            P.Z = Math.Max(0, Math.Min(P.Z, Length - 1));
+            return P;
         }
         
         public void UpdateBlock(Player p, ushort x, ushort y, ushort z, BlockID block,

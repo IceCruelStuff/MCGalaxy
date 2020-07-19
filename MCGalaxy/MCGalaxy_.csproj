@@ -70,9 +70,6 @@
     <StartAction>Project</StartAction>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="LibNoise">
-      <HintPath>..\LibNoise.dll</HintPath>
-    </Reference>
     <Reference Include="MySql.Data">
       <HintPath>..\MySql.Data.dll</HintPath>
     </Reference>
@@ -255,7 +252,7 @@
     <Compile Include="Commands\Information\CmdRankInfo.cs" />
     <Compile Include="Commands\Information\CmdServerInfo.cs" />
     <Compile Include="Commands\Information\CmdLastCmd.cs" />
-    <Compile Include="Commands\Information\CmdLevels.cs" />
+    <Compile Include="Commands\Information\CmdLoaded.cs" />
     <Compile Include="Commands\Information\CmdMapInfo.cs" />
     <Compile Include="Commands\Information\CmdNews.cs" />
     <Compile Include="Commands\Information\CmdOpRules.cs" />
@@ -265,10 +262,9 @@
     <Compile Include="Commands\Information\CmdRules.cs" />
     <Compile Include="Commands\Information\CmdSearch.cs" />
     <Compile Include="Commands\Information\CmdSeen.cs" />
-    <Compile Include="Commands\Information\CmdDevs.cs" />
     <Compile Include="Commands\Information\CmdTime.cs" />
     <Compile Include="Commands\Information\CmdTop.cs" />
-    <Compile Include="Commands\Information\CmdWorlds.cs" />
+    <Compile Include="Commands\Information\CmdLevels.cs" />
     <Compile Include="Commands\Information\CmdView.cs" />
     <Compile Include="Commands\Information\CmdViewRanks.cs" />
     <Compile Include="Commands\Information\CmdWhere.cs" />
@@ -446,6 +442,7 @@
     <Compile Include="Drawing\DrawOps\RestoreSelectionDrawOp.cs" />
     <Compile Include="Drawing\DrawOps\SpheroidDrawOp.cs" />
     <Compile Include="Drawing\DrawOps\PyramidDrawOp.cs" />
+    <Compile Include="Drawing\DrawOps\SPlaceDrawOp.cs" />
     <Compile Include="Drawing\DrawOps\TorusDrawOp.cs" />
     <Compile Include="Drawing\DrawOps\TreeDrawOp.cs" />
     <Compile Include="Drawing\DrawOps\TriangleDrawOp.cs" />
@@ -465,6 +462,7 @@
     <Compile Include="Drawing\Transform\Transform.cs" />
     <Compile Include="Economy\Awards.cs" />
     <Compile Include="Economy\Economy.DB.cs" />
+    <Compile Include="Economy\OtherItems.cs" />
     <Compile Include="Economy\ZombieItems.cs" />
     <Compile Include="Economy\Economy.cs" />
     <Compile Include="Economy\Item.cs" />
@@ -472,6 +470,7 @@
     <Compile Include="Economy\MessageItems.cs" />
     <Compile Include="Economy\NameItems.cs" />
     <Compile Include="Economy\RankItem.cs" />
+    <Compile Include="Entity\CustomModel.cs" />
     <Compile Include="Entity\Entities.cs" />
     <Compile Include="Entity\Entity.cs" />
     <Compile Include="Entity\ModelInfo.cs" />
@@ -528,11 +527,19 @@
     <Compile Include="Generator\Foliage\Tree.cs" />
     <Compile Include="Generator\HeightmapGen.cs" />
     <Compile Include="Generator\ImprovedNoise.cs" />
+    <Compile Include="Generator\LibNoise\Billow.cs" />
+    <Compile Include="Generator\LibNoise\Checkerboard.cs" />
+    <Compile Include="Generator\LibNoise\GradientNoiseBasis.cs" />
+    <Compile Include="Generator\LibNoise\IModule.cs" />
+    <Compile Include="Generator\LibNoise\Perlin.cs" />
+    <Compile Include="Generator\LibNoise\RidgedMultifractal.cs" />
+    <Compile Include="Generator\LibNoise\Voronoi.cs" />
     <Compile Include="Generator\MapGen.cs" />
     <Compile Include="Generator\Realistic\MapGenArgs.cs" />
     <Compile Include="Generator\Realistic\Noise.cs" />
     <Compile Include="Generator\Realistic\MapGen.cs" />
     <Compile Include="Generator\SimpleGen.cs" />
+    <Compile Include="Levels\EnvPreset.cs" />
     <Compile Include="Levels\Hacks.cs" />
     <Compile Include="Levels\IO\Exporters\LvlExporter.cs" />
     <Compile Include="Levels\IO\fNbt.cs" />
@@ -601,11 +608,8 @@
     <Compile Include="Player\PlayerInfo.cs" />
     <Compile Include="Player\PlayerPhysics.cs" />
     <Compile Include="Player\SpamChecker.cs" />
-    <Compile Include="Database\Undo\UndoFormatCBin.cs" />
     <Compile Include="Player\Warp.cs" />
     <Compile Include="Database\Undo\UndoFormat.cs" />
-    <Compile Include="Database\Undo\UndoFormatBin.cs" />
-    <Compile Include="Database\Undo\UndoFormatText.cs" />
     <Compile Include="Network\Player.Networking.cs" />
     <Compile Include="Plugins\Plugin.cs" />
     <Compile Include="Plugins\PluginManager.cs" />
@@ -725,6 +729,7 @@
     <Folder Include="Database\Stats" />
     <Folder Include="Games\Weapons" />
     <Folder Include="Games\RoundsGame" />
+    <Folder Include="Generator\LibNoise" />
     <Folder Include="Generator\Realistic" />
     <Folder Include="Network\Heartbeat" />
     <Folder Include="Network\IRCPlugin" />

@@ -17,13 +17,17 @@
     or implied. See the Licenses for the specific language governing
     permissions and limitations under the Licenses.
  */
+using System.CodeDom.Compiler;
 using System;
 
 namespace MCGalaxy.Scripting {
     public sealed class ScriptingCS : IScripting {    
         
         public override string Ext { get { return ".cs"; } }        
-        public override string ProviderName { get { return "CSharp"; } }
+        public override string ProviderName { get { return "CSharp"; } }     
+        protected override void PrepareArgs(CompilerParameters args) {
+            args.CompilerOptions += " /unsafe";
+        }
         
         public override string CommandSkeleton {
             get {
@@ -43,7 +47,7 @@ namespace MCGalaxy
 \tpublic class Cmd{0} : Command
 \t{{
 \t\t// The command's name (what you put after a slash to use this command)
-\t\tpublic override string name {{ get {{ return ""{1}""; }} }}
+\t\tpublic override string name {{ get {{ return ""{0}""; }} }}
 
 \t\t// Command's shortcut (please take care not to use an existing one, or you may have issues.)
 \t\tpublic override string shortcut {{ get {{ return """"; }} }}
@@ -69,7 +73,7 @@ namespace MCGalaxy
 \t\t// This one controls what happens when you use /Help [commandname].
 \t\tpublic override void Help(Player p)
 \t\t{{
-\t\t\tp.Message(""/{1} - Does stuff. Example command."");
+\t\t\tp.Message(""/{0} - Does stuff. Example command."");
 \t\t}}
 \t}}
 }}";
@@ -81,6 +85,7 @@ namespace MCGalaxy
         
         public override string Ext { get { return ".vb"; } }
         public override string ProviderName { get { return "VisualBasic"; } }
+        protected override void PrepareArgs(CompilerParameters args) { }
         
         public override string CommandSkeleton {
             get {
@@ -102,7 +107,7 @@ Namespace MCGalaxy
 ' The command's name (what you put after a slash to use this command)
 \t\tPublic Overrides ReadOnly Property name() As String
 \t\t\tGet
-\t\t\t\tReturn ""{1}""
+\t\t\t\tReturn ""{0}""
 \t\t\tEnd Get
 \t\tEnd Property
 
@@ -144,8 +149,7 @@ Namespace MCGalaxy
 
 ' This one controls what happens when you use /Help [commandname].
 \t\tPublic Overrides Sub Help(p As Player)
-\t\t\tp.Message(""/{1} - Does stuff. Example command."")
-
+\t\t\tp.Message(""/{0} - Does stuff. Example command."")
 \t\tEnd Sub
 \tEnd Class
 End Namespace";

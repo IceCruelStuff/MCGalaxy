@@ -91,7 +91,6 @@ namespace MCGalaxy {
             CheckFile("MySql.Data.dll");
             CheckFile("sqlite3_x32.dll");
             CheckFile("sqlite3_x64.dll");
-            CheckFile("LibNoise.dll");
 
             EnsureFilesExist();
             MoveSqliteDll();
@@ -182,7 +181,7 @@ namespace MCGalaxy {
             }
             
             ZSGame.Instance.infectMessages = ZSConfig.LoadInfectMessages();
-            Colors.LoadList();
+            Colors.Load();
             Alias.Load();
             BlockDefinition.LoadGlobal();
             ImagePalette.Load();
@@ -303,10 +302,7 @@ namespace MCGalaxy {
         public static void SetMainLevel(Level lvl) {
             Level oldMain = mainLevel;
             mainLevel = lvl;
-            
-            mainLevel.Config.AutoUnload = false;
-            Server.Config.MainLevel = lvl.name;
-            
+            Server.Config.MainLevel = lvl.name;         
             oldMain.Config.AutoUnload = true;
             oldMain.AutoUnload();
         }
